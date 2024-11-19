@@ -7,9 +7,17 @@
  "field_order": [
   "receiver_by_document_field",
   "receiver_by_role",
+  "section_break_1",
+  "condition",
+  "column_break_1",
+  "html_condition_example",
+  "section_break_2",
+  "dynamic_receiver",
+  "column_break_2",
+  "html_dynamic_receiver_example",
+  "section_break_3",
   "cc",
-  "bcc",
-  "condition"
+  "bcc"
  ],
  "fields": [
   {
@@ -26,11 +34,25 @@
    "label": "BCC"
   },
   {
+    "fieldname": "section_break_1",
+    "fieldtype": "Section Break"
+   },
+   {
+    "fieldname": "section_break_2",
+    "fieldtype": "Section Break"
+   },
+   {
+    "depends_on": "eval:parent.channel=='Email'",
+    "fieldname": "section_break_3",
+    "fieldtype": "Section Break"
+   },
+  {
    "description": "Expression, Optional",
    "fieldname": "condition",
-   "fieldtype": "Data",
+   "fieldtype": "Code",
    "in_list_view": 1,
-   "label": "Condition"
+   "label": "Condition",
+   "options": "Py"
   },
   {
    "fieldname": "receiver_by_document_field",
@@ -44,7 +66,37 @@
    "in_list_view": 1,
    "label": "Receiver By Role",
    "options": "Role"
-  }
+  },
+  {
+    "fieldname": "column_break_1",
+    "fieldtype": "Column Break"
+  },
+  {
+    "description": "Code you write here should return a list of valid recievers. It will be evaluated each time.",
+    "fieldname": "dynamic_receiver",
+    "fieldtype": "Code",
+    "in_list_view": 1,
+    "label": "Dynamic Receiver Code",
+    "options": "Py"
+   },
+   {
+    "fieldname": "column_break_2",
+    "fieldtype": "Column Break"
+   },
+   {
+    "fieldname": "column_break_3",
+    "fieldtype": "Column Break"
+   },
+   {
+    "fieldname": "html_condition_example",
+    "fieldtype": "HTML",
+    "options": "<p><strong>Condition Examples:</strong></p>\n<pre>doc.status==\"Open\"<br>doc.due_date==nowdate()<br>doc.total &gt; 40000\n</pre>\n"
+   },
+   {
+    "fieldname": "html_dynamic_receiver_example",
+    "fieldtype": "HTML",
+    "options": "<p><strong>Dynamic Receiver Examples:</strong></p>\n<pre>doc.manager_email<br>doc.supervisor_email<br>doc.recipients.split(',')\n</pre>\n"
+   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,

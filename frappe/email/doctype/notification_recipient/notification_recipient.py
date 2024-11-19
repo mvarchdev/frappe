@@ -21,6 +21,7 @@ class NotificationRecipient(Document):
 		parenttype: DF.Data
 		receiver_by_document_field: DF.Literal[None]
 		receiver_by_role: DF.Link | None
+		dynamic_receiver: DF.Code | None
 	# end: auto-generated types
 
 	pass
