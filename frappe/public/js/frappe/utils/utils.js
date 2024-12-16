@@ -1429,51 +1429,60 @@ Object.assign(frappe.utils, {
 		return $svg;
 	},
 
-	flag(country_code) {
-		return `<img loading="lazy" src="https://flagcdn.com/${country_code}.svg" width="20" height="15">`;
-	},
+		flag(country_code, style = undefined, className = undefined, width = 20, height = 15) {
+			style = style ? `style="${style}"` : "";
+			className = className ? `class="${className}"` : "";
+		width = width ? `width="${width}"` : "";
+		height = height ? `height="${height}"` : "";
 
-	is_emoji(emoji_name) {
-		let emojiList = gemoji.map((emoji) => emoji.emoji);
-		return emojiList.includes(emoji_name);
-	},
+			return `<img
+				src="https://flagcdn.com/${country_code}.svg"
+				${width} ${height}
+				${style}
+				${className}>`;
+		},
 
-	get_desktop_icon(icon_name, variant) {
-		let exists = false;
-		let icon_data = this.get_desktop_icon_by_label(icon_name);
-		variant = variant.toLowerCase();
-		if (!icon_data?.app) return exists;
-		let app_name = icon_data.app;
-		let icon_url = `assets/${app_name}/icons/desktop_icons/${variant}/${frappe.scrub(
-			icon_name
-		)}.svg`;
+		is_emoji(emoji_name) {
+			let emojiList = gemoji.map((emoji) => emoji.emoji);
+			return emojiList.includes(emoji_name);
+		},
 
-		if (
-			frappe.boot.desktop_icon_urls[app_name] &&
-			frappe.boot.desktop_icon_urls[app_name][variant].includes(icon_url)
-		) {
-			return `/${icon_url}`;
-		}
-		return exists;
-	},
+		get_desktop_icon(icon_name, variant) {
+			let exists = false;
+			let icon_data = this.get_desktop_icon_by_label(icon_name);
+			variant = variant.toLowerCase();
+			if (!icon_data?.app) return exists;
+			let app_name = icon_data.app;
+			let icon_url = `assets/${app_name}/icons/desktop_icons/${variant}/${frappe.scrub(
+				icon_name
+			)}.svg`;
 
-	desktop_icon_exists(app_name, url) {
-		let exists = false;
-		if (frappe.boot.desktop_icon_urls[app_name].includes(url)) exists = true;
-		return exists;
-	},
-	get_desktop_icon_by_label(title, filters) {
-		if (!filters) {
-			return frappe.boot.desktop_icons.find((f) => f.label === title);
-		} else {
-			return frappe.boot.desktop_icons.find((f) => {
-				return (
-					f.label === title &&
-					Object.keys(filters).every((key) => f[key] === filters[key])
-				);
-			});
-		}
-	},
+			if (
+				frappe.boot.desktop_icon_urls[app_name] &&
+				frappe.boot.desktop_icon_urls[app_name][variant].includes(icon_url)
+			) {
+				return `/${icon_url}`;
+			}
+			return exists;
+		},
+
+		desktop_icon_exists(app_name, url) {
+			let exists = false;
+			if (frappe.boot.desktop_icon_urls[app_name].includes(url)) exists = true;
+			return exists;
+		},
+		get_desktop_icon_by_label(title, filters) {
+			if (!filters) {
+				return frappe.boot.desktop_icons.find((f) => f.label === title);
+			} else {
+				return frappe.boot.desktop_icons.find((f) => {
+					return (
+						f.label === title &&
+						Object.keys(filters).every((key) => f[key] === filters[key])
+					);
+				});
+			}
+		},
 
 	make_chart(wrapper, custom_options = {}) {
 		let chart_args = {

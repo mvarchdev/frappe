@@ -314,6 +314,7 @@ class PersonalDataDeletionRequest(Document):
 		self.is_full_name_set = email != self.full_name
 		self.anonymization_value_map["Email"] = self.anon
 
+	# TODO: check if 'Custom Search' is something that is needed here
 	def __redact_partial_match_data(self, doctype):
 		match_fields = []
 		editable_text_fields = {

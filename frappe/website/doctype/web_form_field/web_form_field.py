@@ -46,6 +46,8 @@ class WebFormField(Document):
 			"Section Break",
 			"Column Break",
 			"Page Break",
+			"Autocomplete",
+			"Custom Search",
 		]
 		hidden: DF.Check
 		label: DF.Data | None

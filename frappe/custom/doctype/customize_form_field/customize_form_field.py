@@ -72,6 +72,7 @@ class CustomizeFormField(Document):
 			"Text",
 			"Text Editor",
 			"Time",
+			"Custom Search",
 		]
 		hidden: DF.Check
 		hide_border: DF.Check

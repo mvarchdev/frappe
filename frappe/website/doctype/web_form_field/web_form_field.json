@@ -41,7 +41,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Fieldtype",
-   "options": "Attach\nAttach Image\nCheck\nCurrency\nColor\nData\nDate\nDatetime\nDuration\nFloat\nHTML\nInt\nLink\nPassword\nPhone\nRating\nSelect\nSignature\nSmall Text\nText\nText Editor\nTable\nTime\nSection Break\nColumn Break\nPage Break"
+   "options": "Attach\nAttach Image\nCheck\nCurrency\nColor\nData\nDate\nDatetime\nDuration\nFloat\nHTML\nInt\nLink\nPassword\nPhone\nRating\nSelect\nSignature\nSmall Text\nText\nText Editor\nTable\nTime\nSection Break\nColumn Break\nPage Break\nAutocomplete\nCustom Search"
   },
   {
    "fieldname": "label",

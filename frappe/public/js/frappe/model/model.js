@@ -44,6 +44,7 @@ $.extend(frappe.model, {
 		"Text",
 		"Text Editor",
 		"Time",
+		"Custom Search"
 	],
 
 	no_value_type: [

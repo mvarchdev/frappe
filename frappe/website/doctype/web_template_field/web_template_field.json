@@ -32,7 +32,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Fieldtype",
-   "options": "Attach Image\nCheck\nData\nInt\nLink\nSelect\nSmall Text\nText\nMarkdown Editor\nSection Break\nColumn Break\nTable Break",
+   "options": "Attach Image\nCheck\nData\nInt\nLink\nSelect\nSmall Text\nText\nMarkdown Editor\nSection Break\nColumn Break\nTable Break\nCustom Search",
    "reqd": 1
   },
   {

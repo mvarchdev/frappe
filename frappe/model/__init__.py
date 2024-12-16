@@ -40,6 +40,7 @@ data_fieldtypes = (
 	"Phone",
 	"Autocomplete",
 	"JSON",
+	"Custom Search"
 )
 
 float_like_fields = {"Float", "Currency", "Percent"}

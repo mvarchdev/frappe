@@ -29,6 +29,7 @@ class WebTemplateField(Document):
 			"Section Break",
 			"Column Break",
 			"Table Break",
+			"Custom Search",
 		]
 		label: DF.Data
 		options: DF.SmallText | None

@@ -1,0 +1,56 @@
+/* Custom Search Field Styles */
+.custom-search-control {
+	position: relative;
+
+	.field-status-area {
+		position: absolute;
+		right: 0;
+		top: 0;
+		height: 100%;
+		display: flex;
+		align-items: center;
+	}
+
+	.loading-icon {
+		margin-right: 8px;
+		display: none;
+	}
+
+	.result-image {
+        margin-right: 6px;
+		display: none;
+
+		img {
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			object-fit: cover;
+		}
+	}
+
+	input.input-with-feedback.form-control {
+		display: inline-block;
+		width: 100%;
+	}
+
+	.option-description {
+		font-size: 90%;
+		color: #666;
+	}
+
+	.spinner {
+		display: inline-block;
+		width: 14px;
+		height: 14px;
+		border: 2px solid #ccc;
+		border-top: 2px solid #333;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		vertical-align: middle;
+	}
+
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+}
