@@ -273,8 +273,22 @@ class CommunicationEmailMixin:
 		)
 		bcc = self.get_mail_bcc_with_displayname(is_inbound_mail_communcation=is_inbound_mail_communcation)
 
-		if not (recipients or cc or bcc):
+		# Remove original receipients from cc and bcc when inbound mail
+		if is_inbound_mail_communcation:
+			original_recipients = set(self.get_mail_recipients_with_displayname())
+			recipients = list(set(recipients) - original_recipients)
+			cc = list(set(cc) - original_recipients)
+			bcc = list(set(bcc) - original_recipients)
+
+		if not (recipients or cc):
 			return {}
+
+		sender = None
+		# If this is inbound mail, then we need to get sender email (outgoing email account)
+		if is_inbound_mail_communcation:
+			sender = self.get_email_with_displayname(EmailAccount.find_default_outgoing())
+		else:
+			sender = self.get_mail_sender_with_displayname()
 
 		final_attachments = self.mail_attachments(
 			print_format=print_format, print_html=print_html, print_language=print_language
@@ -294,7 +308,7 @@ class CommunicationEmailMixin:
 			"cc": cc,
 			"bcc": bcc,
 			"expose_recipients": "header",
-			"sender": self.get_mail_sender_with_displayname(),
+			"sender": sender,
 			"reply_to": reply_to,
 			"subject": self.subject,
 			"content": self.get_content(print_format=print_format),
