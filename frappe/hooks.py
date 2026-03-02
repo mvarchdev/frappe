@@ -41,7 +41,6 @@ app_include_icons = [
 	"/assets/frappe/icons/lucide/icons.svg",
 	"/assets/frappe/icons/timeless/icons.svg",
 	"/assets/frappe/icons/espresso/icons.svg",
-	"/assets/frappe/icons/sunray/icons.svg",
 	"/assets/frappe/icons/desktop_icons/alphabets.svg",
 ]
 

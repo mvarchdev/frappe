@@ -828,13 +828,13 @@ doctype_action_properties = {
 
 doctype_state_properties = {"title": "Data", "color": "Select"}
 
-# TODO: add 'Custom Search'
 ALLOWED_FIELDTYPE_CHANGE = (
 	("Currency", "Float", "Percent"),
 	("Small Text", "Data"),
 	("Text", "Data"),
 	("Text", "Text Editor", "Code", "Signature", "HTML Editor"),
 	("Data", "Select"),
+	("Data", "Custom Search"),
 	("Text", "Small Text", "Long Text"),
 	("Text", "Data", "Barcode"),
 	("Code", "Geolocation"),
