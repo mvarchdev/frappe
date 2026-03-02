@@ -21,8 +21,10 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		</div>`).prependTo(this.input_area);
 		this.$input_area = $(this.input_area);
 		this.$input = this.$input_area.find("input");
+		this.$link_field = this.$input_area.find(".link-field");
 		this.$link = this.$input_area.find(".link-btn");
 		this.$link_open = this.$link.find(".btn-open");
+		this.setup_country_flag();
 		this.set_input_attributes();
 		this.$input.on("focus", function () {
 			if (!me.$input.val()) {
@@ -61,6 +63,66 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		this.bind_change_event();
 	}
 
+	is_country_link_field() {
+		return this.get_options() === "Country";
+	}
+
+	setup_country_flag() {
+		if (!this.is_country_link_field()) return;
+
+		this.country_code_cache = {};
+		this.$link_field.addClass("has-country-flag");
+		this.$country_flag = $('<span class="country-flag"></span>').insertBefore(this.$link);
+		this.clear_country_flag();
+	}
+
+	clear_country_flag() {
+		this.$country_flag?.hide().empty();
+	}
+
+	render_country_flag(country_code) {
+		if (!country_code) {
+			this.clear_country_flag();
+			return;
+		}
+
+		this.$country_flag?.html(frappe.utils.flag(country_code)).show();
+	}
+
+	refresh_country_flag(value = undefined) {
+		if (!this.is_country_link_field() || !this.$country_flag) return;
+
+		const country_name =
+			value !== undefined ? value : this.get_model_value() || this.value || this.get_input_value();
+		this.update_country_flag(country_name);
+	}
+
+	update_country_flag(country_name) {
+		if (!this.is_country_link_field()) return;
+
+		if (!country_name) {
+			this.pending_country_flag_for = null;
+			this.clear_country_flag();
+			return;
+		}
+
+		if (Object.prototype.hasOwnProperty.call(this.country_code_cache, country_name)) {
+			this.render_country_flag(this.country_code_cache[country_name]);
+			return;
+		}
+
+		this.pending_country_flag_for = country_name;
+		frappe.db.get_value("Country", country_name, "code").then((r) => {
+			if (this.pending_country_flag_for !== country_name) {
+				return;
+			}
+
+			const country_code = (r?.message?.code || "").toLowerCase();
+			this.country_code_cache[country_name] = country_code || null;
+			this.render_country_flag(country_code);
+		});
+	}
+
 	show_link_and_clear_buttons() {
 		if (this.$input.val() && this.get_options()) {
 			const doctype = this.get_options();
@@ -93,6 +155,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 	}
 	set_formatted_input(value) {
 		super.set_formatted_input(value);
+		this.refresh_country_flag(value);
 		if (!value) return;
 
 		if (!this.title_value_map) {
@@ -136,7 +199,15 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 			frappe.utils.add_link_title(this.get_options(), value, label);
 		}
 
-		return this.validate_and_set_in_model(value, e);
+		const validation_result = this.validate_and_set_in_model(value, e);
+		if (!this.is_country_link_field()) {
+			return validation_result;
+		}
+
+		return Promise.resolve(validation_result).then((result) => {
+			this.refresh_country_flag();
+			return result;
+		});
 	}
 	parse(value) {
 		return strip_html(value);

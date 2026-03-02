@@ -42,6 +42,20 @@ context("Control Link", () => {
 		return dialog;
 	}
 
+	function get_dialog_with_country_link() {
+		return cy.dialog({
+			title: "Country Link",
+			fields: [
+				{
+					label: "Country",
+					fieldname: "country",
+					fieldtype: "Link",
+					options: "Country",
+				},
+			],
+		});
+	}
+
 	it("should set the valid value", () => {
 		get_dialog_with_link().as("dialog");
 
@@ -123,6 +137,53 @@ context("Control Link", () => {
 				.should("be.visible")
 				.should("have.attr", "href", `/desk/todo/${todos[0]}`);
 		});
+	});
+
+	it("should show country flag for selected country", () => {
+		get_dialog_with_country_link().as("dialog");
+
+		cy.intercept("GET", "**/api/method/frappe.client.get_value**", (req) => {
+			if (req.query.doctype === "Country" && req.query.fieldname === "code") {
+				req.alias = "country_code";
+			}
+		});
+
+		cy.get("@dialog").then((dialog) => {
+			return dialog.set_value("country", "India");
+		});
+
+		cy.wait("@country_code");
+		cy.get(".frappe-control[data-fieldname=country] .country-flag")
+			.should("be.visible")
+			.find("img")
+			.should("have.attr", "src")
+			.and("include", "flagcdn.com/in.svg");
+	});
+
+	it("should not show stale country flag when field is cleared before response", () => {
+		get_dialog_with_country_link().as("dialog");
+
+		cy.intercept("GET", "**/api/method/frappe.client.get_value**", (req) => {
+			if (req.query.doctype === "Country" && req.query.fieldname === "code") {
+				req.alias = "country_code";
+				req.reply({
+					delay: 400,
+					statusCode: 200,
+					body: { message: { code: "IN" } },
+				});
+			}
+		});
+
+		cy.get("@dialog").then((dialog) => {
+			return dialog.set_value("country", "India");
+		});
+		cy.get("@dialog").then((dialog) => {
+			return dialog.set_value("country", "");
+		});
+
+		cy.wait("@country_code");
+		cy.get(".frappe-control[data-fieldname=country] .country-flag").should("not.be.visible");
+		cy.get(".frappe-control[data-fieldname=country] .country-flag img").should("not.exist");
 	});
 
 	it("show title field in link", () => {

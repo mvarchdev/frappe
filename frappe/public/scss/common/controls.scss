@@ -207,6 +207,31 @@ select.form-control {
 			align-items: center;
 		}
 	}
+
+	.link-field.has-country-flag {
+		.input-with-feedback {
+			padding-right: 62px;
+		}
+
+		.country-flag {
+			display: none;
+			position: absolute;
+			top: 50%;
+			right: 34px;
+			transform: translateY(-50%);
+			line-height: 0;
+			pointer-events: none;
+			z-index: 2;
+
+			img {
+				width: 20px;
+				height: 15px;
+				border-radius: var(--border-radius-sm);
+				object-fit: cover;
+				display: block;
+			}
+		}
+	}
 }
 
 .frappe-control:not([data-fieldtype="MultiSelectPills"]):not([data-fieldtype="Table MultiSelect"]) {
