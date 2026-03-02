@@ -71,6 +71,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		if (!this.is_country_link_field()) return;
 
 		this.country_code_cache = {};
+		this.pending_country_flag_for = null;
 		this.$link_field.addClass("has-country-flag");
 		this.$country_flag = $('<span class="country-flag"></span>').insertBefore(this.$link);
 		this.clear_country_flag();
@@ -111,6 +112,10 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 			return;
 		}
 
+		if (this.pending_country_flag_for === country_name) {
+			return;
+		}
+
 		this.pending_country_flag_for = country_name;
 		frappe.db.get_value("Country", country_name, "code").then((r) => {
 			if (this.pending_country_flag_for !== country_name) {
@@ -120,6 +125,13 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 			const country_code = (r?.message?.code || "").toLowerCase();
 			this.country_code_cache[country_name] = country_code || null;
 			this.render_country_flag(country_code);
+		}).catch(() => {
+			if (this.pending_country_flag_for !== country_name) {
+				return;
+			}
+
+			this.country_code_cache[country_name] = null;
+			this.clear_country_flag();
 		});
 	}
 
