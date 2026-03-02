@@ -77,8 +77,7 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 
 	/** Default on_select method if none is specified. */
 	_default_on_select(option_id) {
-		// Default behavior: just log selected option
-		console.log("Option selected:", option_id);
+		return option_id;
 	}
 
 	/** Trigger on_show action if defined. */
