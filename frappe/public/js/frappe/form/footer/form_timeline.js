@@ -553,13 +553,15 @@ class FormTimeline extends BaseTimeline {
 	}
 	compose_mail(communication_doc = null, reply_all = false) {
 		const is_reply_to_sent_communication = communication_doc?.sent_or_received === "Sent";
+		const session_user_email = this.normalize_email(frappe.session.user_email);
+		const communication_sender = this.normalize_email(communication_doc?.sender);
 		const args = {
 			doc: this.frm.doc,
 			frm: this.frm,
 			recipients:
 				is_reply_to_sent_communication
 					? communication_doc.recipients || this.get_recipient()
-					: communication_doc && communication_doc.sender != frappe.session.user_email
+					: communication_doc && communication_sender != session_user_email
 					? communication_doc.sender
 					: this.get_recipient(),
 			is_a_reply: Boolean(communication_doc),
@@ -577,18 +579,20 @@ class FormTimeline extends BaseTimeline {
 					account.enable_outgoing
 				);
 			})
-			.map((e) => e.email_id);
+			.map((e) => this.normalize_email(e.email_id));
 
 		if (communication_doc && args.is_a_reply) {
 			args.cc = "";
 			if (
-				email_accounts.includes(frappe.session.user_email) &&
-				communication_doc.sender != frappe.session.user_email
+				email_accounts.includes(session_user_email) &&
+				communication_sender != session_user_email
 			) {
 				// add recipients to cc if replying sender is different from last email
-				const recipients = communication_doc.recipients.split(",").map((r) => r.trim());
+				const recipients = frappe.utils.split_emails(cstr(communication_doc.recipients));
 				args.cc =
-					recipients.filter((r) => r != frappe.session.user_email).join(", ") + ", ";
+					recipients
+						.filter((recipient) => this.normalize_email(recipient) != session_user_email)
+						.join(", ") + ", ";
 			}
 			if (reply_all) {
 				// if reply_all then add cc and bcc as well.
@@ -608,6 +612,15 @@ class FormTimeline extends BaseTimeline {
 		}
 
 		new frappe.views.CommunicationComposer(args);
+	}
+
+	normalize_email(email) {
+		if (!email) return "";
+
+		const [parsed_email] = frappe.utils.split_emails(cstr(email));
+		const value = cstr(parsed_email || email).trim();
+		const match = value.match(/<([^<>]+)>/);
+		return cstr(match ? match[1] : value).trim().toLowerCase();
 	}
 
 	get_recipient() {

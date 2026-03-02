@@ -353,13 +353,18 @@ frappe.views.CommunicationComposer = class {
 		let sender = this.dialog.get_value("sender");
 		if (!sender) return;
 		const is_reply_to_sent_communication = this.last_email.sent_or_received === "Sent";
+		const normalized_sender = this.normalize_email(sender);
+		const normalized_last_sender = this.normalize_email(this.last_email.sender);
 		const fields = {
 			recipients: this.dialog.fields_dict.recipients,
 			cc: this.dialog.fields_dict.cc,
 			bcc: this.dialog.fields_dict.bcc,
 		};
 		// If replying to a sent communication (or same sender), continue thread with original recipients.
-		if (is_reply_to_sent_communication || this.last_email.sender == sender) {
+		if (
+			is_reply_to_sent_communication ||
+			(normalized_last_sender && normalized_last_sender == normalized_sender)
+		) {
 			fields.recipients.set_value(this.last_email.recipients);
 			if (this.reply_all) {
 				fields.cc.set_value(this.last_email.cc);
@@ -369,18 +374,31 @@ frappe.views.CommunicationComposer = class {
 			fields.recipients.set_value(this.last_email.sender);
 			if (this.reply_all) {
 				// if sending reply add ( last email's recipients - sender's email_id ) to cc.
-				const recipients = this.last_email.recipients.split(",").map((r) => r.trim());
+				const recipients = frappe.utils.split_emails(cstr(this.last_email.recipients));
 				if (!this.cc) {
 					this.cc = "";
 				}
-				const cc_array = this.cc.split(",").map((r) => r.trim());
+				const cc_array = frappe.utils.split_emails(cstr(this.cc));
+				const normalized_cc = new Set(
+					cc_array.map((recipient) => this.normalize_email(recipient)).filter(Boolean)
+				);
 				if (this.cc && !this.cc.endsWith(", ")) {
 					this.cc += ", ";
 				}
 				this.cc += recipients
-					.filter((r) => !cc_array.includes(r) && r != sender)
+					.filter((recipient) => {
+						const normalized_recipient = this.normalize_email(recipient);
+						return (
+							normalized_recipient &&
+							normalized_recipient != normalized_sender &&
+							!normalized_cc.has(normalized_recipient)
+						);
+					})
 					.join(", ");
-				this.cc = this.cc.replace(sender + ", ", "");
+				this.cc = frappe.utils
+					.split_emails(cstr(this.cc))
+					.filter((recipient) => this.normalize_email(recipient) != normalized_sender)
+					.join(", ");
 				fields.cc.set_value(this.cc);
 			}
 		}
@@ -391,9 +409,14 @@ frappe.views.CommunicationComposer = class {
 
 		if (!this.forward && !this.recipients && this.last_email) {
 			const is_reply_to_sent_communication = this.last_email.sent_or_received === "Sent";
+			const normalized_last_sender = this.normalize_email(this.last_email.sender);
+			const normalized_selected_sender = this.normalize_email(this.sender);
 			this.recipients = this.last_email.sender;
 			// If replying to a sent communication (or same sender), continue thread with original recipients.
-			if (is_reply_to_sent_communication || this.last_email.sender == this.sender) {
+			if (
+				is_reply_to_sent_communication ||
+				(normalized_last_sender && normalized_last_sender == normalized_selected_sender)
+			) {
 				this.recipients = this.last_email.recipients;
 			}
 
@@ -446,6 +469,15 @@ frappe.views.CommunicationComposer = class {
 		if (this.frm && !this.recipients) {
 			this.recipients = this.frm.doc[this.frm.email_field];
 		}
+	}
+
+	normalize_email(email) {
+		if (!email) return "";
+
+		const [parsed_email] = frappe.utils.split_emails(cstr(email));
+		const value = cstr(parsed_email || email).trim();
+		const match = value.match(/<([^<>]+)>/);
+		return cstr(match ? match[1] : value).trim().toLowerCase();
 	}
 
 	setup_email_template() {
