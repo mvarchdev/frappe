@@ -1,5 +1,4 @@
 import Awesomplete from "awesomplete";
-frappe.ui.form.recent_link_validations = {};
 
 frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui.form.ControlData {
 	static trigger_change_on_input_event = false;
@@ -34,7 +33,7 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 		if (typeof this.config === "string") {
 			try {
 				this.config = JSON.parse(this.config);
-			} catch (e) {
+			} catch (error) {
 				console.warn("Failed to parse df.options as JSON. Using default config.");
 				this.config = {};
 			}
@@ -60,18 +59,23 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 		this.on_show_fn = this._resolve_function(this.config.on_show, null);
 
 		// Debounce configuration
-		this.debounce_time = this.config.debounce ||
-			(this.config.source === "backend" ? this.config.backend.debounce : 0);
+		this.debounce_time = this.config.debounce
+			|| (this.config.source === "backend" ? this.config.backend.debounce : 0);
 	}
 
-	/** Resolve a function from config, can be a direct function or a window global by name. */
+	/** Resolve a function from config, can be a direct function or window path by name. */
 	_resolve_function(fn_config, default_fn) {
 		if (typeof fn_config === "function") {
 			return fn_config;
 		}
-		if (typeof fn_config === "string" && window[fn_config]) {
-			return window[fn_config];
+
+		if (typeof fn_config === "string") {
+			const resolved = fn_config.split(".").reduce((obj, key) => obj?.[key], window);
+			if (typeof resolved === "function") {
+				return resolved;
+			}
 		}
+
 		return default_fn;
 	}
 
@@ -113,12 +117,13 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 		this.$input.on("focus", () => {
 			const value = this.get_input_value()?.trim();
 			if (this.config.show_all_on_empty && !value) {
-				this._fetch_data("").then((response) => {
-					if (!this.$input.is(":focus")) return;
-					this._hide_loading();
-					this._render_results(response);
-					this._maybe_open_dropdown();
-				});
+				this._fetch_with_error_handling("")
+					.then((response) => {
+						if (!this.$input.is(":focus")) return;
+						this._render_results(response);
+						this._maybe_open_dropdown();
+					})
+					.finally(() => this._hide_loading());
 			}
 		});
 	}
@@ -130,14 +135,83 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 	_on_show_autofetch_image() {
 		const value = this.get_input_value()?.trim();
 		if (value) {
-			this._fetch_data(value, true).then((response) => {
-				// When autofetching image on show, we allow fallback to first option's image
-				this._render_results(response, {
-					only_image: true,
-					fallback_to_first_option_image: true
-				});
-			});
+			this._fetch_with_error_handling(value, true)
+				.then((response) => {
+					// When autofetching image on show, we allow fallback to first option's image
+					this._render_results(response, {
+						only_image: true,
+						fallback_to_first_option_image: true,
+					});
+				})
+				.finally(() => this._hide_loading());
 		}
+	}
+
+	_sanitize_url(url, { allow_data = false } = {}) {
+		if (!url) return null;
+
+		try {
+			const parsed = new URL(url, window.location.origin);
+			const protocol = parsed.protocol.toLowerCase();
+
+			if (protocol === "http:" || protocol === "https:" || protocol === "mailto:") {
+				return parsed.href;
+			}
+
+			if (allow_data && protocol === "data:") {
+				return parsed.href;
+			}
+		} catch (error) {
+			// Ignore malformed URLs and keep UI safe.
+		}
+
+		return null;
+	}
+
+	_build_result_image(image) {
+		return $("<img>").attr("src", image).css({
+			width: "20px",
+			height: "20px",
+			borderRadius: "50%",
+			objectFit: "cover",
+		});
+	}
+
+	_set_image_with_optional_link(image, link) {
+		const safe_image = this._sanitize_url(image, { allow_data: true });
+		if (!safe_image) {
+			this._hide_image();
+			return;
+		}
+
+		const $image = this._build_result_image(safe_image);
+		const safe_link = this._sanitize_url(link);
+
+		this.$result_image.empty();
+		if (safe_link) {
+			this.$result_image.append(
+				$("<a>")
+					.attr("href", safe_link)
+					.attr("target", "_blank")
+					.attr("rel", "noopener noreferrer")
+					.append($image)
+			);
+		} else {
+			this.$result_image.append($image);
+		}
+
+		this.$result_image.show();
+	}
+
+	_handle_fetch_error(error) {
+		if (error) {
+			console.warn("Custom Search fetch failed", error);
+		}
+		return { options: [] };
+	}
+
+	_fetch_with_error_handling(term, exact_match = false) {
+		return this._fetch_data(term, exact_match).catch((error) => this._handle_fetch_error(error));
 	}
 
 	/** Show loading spinner if enabled. */
@@ -163,11 +237,8 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 			this._hide_image();
 			return;
 		}
-		let img_html = `<img src="${image}" style="width:20px; height:20px; border-radius:50%; object-fit:cover;">`;
-		if (link) {
-			img_html = `<a href="${link}" target="_blank">${img_html}</a>`;
-		}
-		this.$result_image.html(img_html).show();
+
+		this._set_image_with_optional_link(image, link);
 	}
 
 	/** Hide image display. */
@@ -226,22 +297,24 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 				this._hide_image();
 
 				if (this.config.show_all_on_empty) {
-					this._fetch_data("").then((response) => {
-						if (!this.$input.is(":focus")) return;
-						this._hide_loading();
-						this._render_results(response);
-						this._maybe_open_dropdown();
-					});
+					this._fetch_with_error_handling("")
+						.then((response) => {
+							if (!this.$input.is(":focus")) return;
+							this._render_results(response);
+							this._maybe_open_dropdown();
+						})
+						.finally(() => this._hide_loading());
 				}
 				return;
 			}
 
 			// Have a term: fetch filtered options
-			this._fetch_data(term).then((response) => {
-				if (!this.$input.is(":focus")) return;
-				this._hide_loading();
-				this._render_results(response);
-			});
+			this._fetch_with_error_handling(term)
+				.then((response) => {
+					if (!this.$input.is(":focus")) return;
+					this._render_results(response);
+				})
+				.finally(() => this._hide_loading());
 		};
 
 		const effective_debounce = this.debounce_time && this.debounce_time > 0
@@ -285,11 +358,15 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 
 			this.autocomplete_open = false;
 
-			if (item && item.id) {
+			if (!item || !Object.keys(item).length) {
+				return;
+			}
+
+			if (item.id || item.value) {
 				this._on_select(item);
 			}
 
-			if (item && item.image) {
+			if (item.image) {
 				this._update_image(item.image, item.link);
 			}
 
@@ -302,7 +379,7 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 	 * @param {Object} item - The selected item object.
 	 */
 	_on_select(item) {
-		this.on_select_fn(item.id);
+		this.on_select_fn(item.id || item.value, item, this);
 	}
 
 	/**
@@ -327,9 +404,9 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 		const args = { txt: term, exact_match, ...(this.config.backend.args || {}) };
 		return frappe.call({
 			method: this.config.backend.method,
-			args: args,
+			args,
 			no_spinner: true,
-		}).then(r => r.message || []);
+		}).then((r) => r.message || []);
 	}
 
 	/**
@@ -346,15 +423,15 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 		}
 
 		let search_fields = this.config.search_fields;
-		let filtered = data.filter(item => {
+		let filtered = data.filter((item) => {
 			if (exact_match) {
-				return ((item[search_fields[0]] || "").toLowerCase() === term);
-			} else {
-				return search_fields.some(field => {
-					let val = (item[field] || "").toLowerCase();
-					return val.includes(term);
-				});
+				return (item[search_fields[0]] || "").toLowerCase() === term;
 			}
+
+			return search_fields.some((field) => {
+				let val = (item[field] || "").toLowerCase();
+				return val.includes(term);
+			});
 		});
 
 		return { options: filtered };
@@ -412,9 +489,8 @@ frappe.ui.form.ControlCustomSearch = class ControlCustomSearch extends frappe.ui
 	}
 };
 
-// Modified Awesomplete method name for clarity
-if (Awesomplete) {
-	Awesomplete.prototype.get_item_by_id = function(value) {
-		return this._list.find(item => item.id === value || item.value === value) || {};
+if (Awesomplete && !Awesomplete.prototype.get_item_by_id) {
+	Awesomplete.prototype.get_item_by_id = function (value) {
+		return this._list.find((item) => item.id === value || item.value === value) || {};
 	};
 }
