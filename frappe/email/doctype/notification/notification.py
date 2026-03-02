@@ -14,7 +14,7 @@ from frappe.desk.doctype.notification_log.notification_log import enqueue_create
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
 from frappe.model.document import Document
 from frappe.modules.utils import export_module_json, get_doc_module
-from frappe.utils import add_to_date, cast, cint, now_datetime, nowdate, validate_email_address
+from frappe.utils import add_to_date, cast, cint, now_datetime, nowdate, split_emails, validate_email_address
 from frappe.utils.data import evaluate_filters
 from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals
@@ -567,6 +567,24 @@ def get_context(context):
 			)
 		return mobile_no
 
+	@staticmethod
+	def _normalize_dynamic_receivers(dynamic_receiver_eval) -> list[str]:
+		if not dynamic_receiver_eval:
+			return []
+
+		if isinstance(dynamic_receiver_eval, str):
+			values = dynamic_receiver_eval.replace(",", "\n").split("\n")
+		elif isinstance(dynamic_receiver_eval, (list, tuple, set)):
+			values = dynamic_receiver_eval
+		else:
+			values = [dynamic_receiver_eval]
+
+		return [str(value).strip() for value in values if str(value).strip()]
+
+	def _evaluate_dynamic_receivers(self, dynamic_receiver_code: str, context: dict) -> list[str]:
+		dynamic_receiver_eval = frappe.safe_eval(dynamic_receiver_code, None, context)
+		return self._normalize_dynamic_receivers(dynamic_receiver_eval)
+
 	def get_list_of_recipients(self, doc, context):
 		recipients = []
 		cc = []
@@ -603,11 +621,11 @@ def get_context(context):
 
 			# Dynamic recipients list
 			if recipient.dynamic_receiver:
-				dynamic_receiver_eval = frappe.safe_eval(recipient.dynamic_receiver, None, context)
-				# We should also check if the dynamic_receiver_eval is a list and also ensure that each element is string
-				if dynamic_receiver_eval and isinstance(dynamic_receiver_eval, list):
-					dynamic_receiver_eval = [str(i) for i in dynamic_receiver_eval]
-					recipients += dynamic_receiver_eval
+				dynamic_recipients = self._evaluate_dynamic_receivers(recipient.dynamic_receiver, context)
+				if dynamic_recipients:
+					recipients.extend(
+						split_emails(validate_email_address("\n".join(dynamic_recipients), throw=False))
+					)
 
 		if self.send_to_all_assignees:
 			recipients = recipients + get_assignees(doc)
@@ -649,10 +667,7 @@ def get_context(context):
 
 			# Dynamic receivers list
 			if recipient.dynamic_receiver:
-				dynamic_receiver_eval = frappe.safe_eval(recipient.dynamic_receiver, None, context)
-				# ensure dynamic receiver expression returns string-like recipients
-				if dynamic_receiver_eval and isinstance(dynamic_receiver_eval, list):
-					receiver_list += [str(i) for i in dynamic_receiver_eval]
+				receiver_list += self._evaluate_dynamic_receivers(recipient.dynamic_receiver, context)
 
 		return list(set(receiver_list))
 

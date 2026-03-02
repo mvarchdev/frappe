@@ -72,7 +72,7 @@
     "fieldtype": "Column Break"
   },
   {
-    "description": "Code you write here should return a list of valid recievers. It will be evaluated each time.",
+    "description": "Code you write here should return a list of valid receivers. It is evaluated on each notification run.",
     "fieldname": "dynamic_receiver",
     "fieldtype": "Code",
     "in_list_view": 1,
@@ -84,10 +84,6 @@
     "fieldtype": "Column Break"
    },
    {
-    "fieldname": "column_break_3",
-    "fieldtype": "Column Break"
-   },
-   {
     "fieldname": "html_condition_example",
     "fieldtype": "HTML",
     "options": "<p><strong>Condition Examples:</strong></p>\n<pre>doc.status==\"Open\"<br>doc.due_date==nowdate()<br>doc.total &gt; 40000\n</pre>\n"
@@ -95,7 +91,7 @@
    {
     "fieldname": "html_dynamic_receiver_example",
     "fieldtype": "HTML",
-    "options": "<p><strong>Dynamic Receiver Examples:</strong></p>\n<pre>doc.manager_email<br>doc.supervisor_email<br>doc.recipients.split(',')\n</pre>\n"
+    "options": "<p><strong>Dynamic Receiver Examples:</strong></p>\n<pre>[doc.manager_email] if doc.manager_email else []<br>[doc.supervisor_email] if doc.supervisor_email else []<br>doc.recipients.split(',') if doc.recipients else []\n</pre>\n"
    }
  ],
  "index_web_pages_for_search": 1,
