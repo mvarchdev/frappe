@@ -3,7 +3,7 @@
 import frappe
 from frappe.core.page.permission_manager.permission_manager import add, reset, update
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
-from frappe.desk.form.load import get_docinfo, getdoc, getdoctype
+from frappe.desk.form.load import get_communication_data, get_docinfo, getdoc, getdoctype
 from frappe.tests import IntegrationTestCase
 from frappe.tests.test_helpers import setup_for_tests
 from frappe.utils.file_manager import save_file
@@ -191,6 +191,34 @@ class TestFormLoad(IntegrationTestCase):
 
 		self.assertEqual(len(docinfo.communications), 1)
 		self.assertIn("email", docinfo.communications[0].content)
+		note.delete()
+
+	def test_get_communication_data_includes_sent_or_received(self):
+		note = frappe.new_doc("Note")
+		note.content = "timeline payload test"
+		note.title = frappe.generate_hash(length=20)
+		note.insert()
+
+		communication = frappe.get_doc(
+			{
+				"doctype": "Communication",
+				"communication_type": "Communication",
+				"communication_medium": "Email",
+				"sent_or_received": "Sent",
+				"content": "outgoing email",
+				"reference_doctype": note.doctype,
+				"reference_name": note.name,
+				"sender": "outgoing@example.com",
+				"recipients": "customer@example.com",
+				"subject": "Timeline payload contract",
+			}
+		).insert()
+
+		communications = get_communication_data(note.doctype, note.name)
+		row = next((record for record in communications if record.name == communication.name), None)
+
+		self.assertIsNotNone(row)
+		self.assertEqual(row.sent_or_received, "Sent")
 		note.delete()
 
 

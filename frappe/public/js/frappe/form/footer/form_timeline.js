@@ -552,11 +552,14 @@ class FormTimeline extends BaseTimeline {
 		});
 	}
 	compose_mail(communication_doc = null, reply_all = false) {
+		const is_reply_to_sent_communication = communication_doc?.sent_or_received === "Sent";
 		const args = {
 			doc: this.frm.doc,
 			frm: this.frm,
 			recipients:
-				communication_doc && communication_doc.sender != frappe.session.user_email
+				is_reply_to_sent_communication
+					? communication_doc.recipients || this.get_recipient()
+					: communication_doc && communication_doc.sender != frappe.session.user_email
 					? communication_doc.sender
 					: this.get_recipient(),
 			is_a_reply: Boolean(communication_doc),

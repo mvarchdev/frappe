@@ -352,13 +352,14 @@ frappe.views.CommunicationComposer = class {
 		if (!this.is_a_reply || !this.last_email) return;
 		let sender = this.dialog.get_value("sender");
 		if (!sender) return;
+		const is_reply_to_sent_communication = this.last_email.sent_or_received === "Sent";
 		const fields = {
 			recipients: this.dialog.fields_dict.recipients,
 			cc: this.dialog.fields_dict.cc,
 			bcc: this.dialog.fields_dict.bcc,
 		};
-		// If same user replies to their own email, set recipients to last email recipients
-		if (this.last_email.sender == sender) {
+		// If replying to a sent communication (or same sender), continue thread with original recipients.
+		if (is_reply_to_sent_communication || this.last_email.sender == sender) {
 			fields.recipients.set_value(this.last_email.recipients);
 			if (this.reply_all) {
 				fields.cc.set_value(this.last_email.cc);
@@ -389,9 +390,10 @@ frappe.views.CommunicationComposer = class {
 		this.subject = this.subject || "";
 
 		if (!this.forward && !this.recipients && this.last_email) {
+			const is_reply_to_sent_communication = this.last_email.sent_or_received === "Sent";
 			this.recipients = this.last_email.sender;
-			// If same user replies to their own email, set recipients to last email recipients
-			if (this.last_email.sender == this.sender) {
+			// If replying to a sent communication (or same sender), continue thread with original recipients.
+			if (is_reply_to_sent_communication || this.last_email.sender == this.sender) {
 				this.recipients = this.last_email.recipients;
 			}
 
