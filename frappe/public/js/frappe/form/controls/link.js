@@ -90,6 +90,23 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		this.$country_flag?.html(frappe.utils.flag(country_code)).show();
 	}
 
+	normalize_country_name(country_name) {
+		if (typeof country_name !== "string") {
+			return country_name;
+		}
+
+		return country_name.trim();
+	}
+
+	normalize_country_code(country_code) {
+		const normalized = (country_code || "").toString().trim().toLowerCase();
+		if (!normalized || !/^[a-z]{2}$/.test(normalized)) {
+			return null;
+		}
+
+		return normalized;
+	}
+
 	refresh_country_flag(value = undefined) {
 		if (!this.is_country_link_field() || !this.$country_flag) return;
 
@@ -100,6 +117,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 
 	update_country_flag(country_name) {
 		if (!this.is_country_link_field()) return;
+		country_name = this.normalize_country_name(country_name);
 
 		if (!country_name) {
 			this.pending_country_flag_for = null;
@@ -117,22 +135,24 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		}
 
 		this.pending_country_flag_for = country_name;
-		frappe.db.get_value("Country", country_name, "code").then((r) => {
-			if (this.pending_country_flag_for !== country_name) {
-				return;
-			}
+		frappe.db.get_value("Country", country_name, "code")
+			.then((r) => {
+				if (this.pending_country_flag_for !== country_name) {
+					return;
+				}
 
-			const country_code = (r?.message?.code || "").toLowerCase();
-			this.country_code_cache[country_name] = country_code || null;
-			this.render_country_flag(country_code);
-		}).catch(() => {
-			if (this.pending_country_flag_for !== country_name) {
-				return;
-			}
+				const country_code = this.normalize_country_code(r?.message?.code);
+				this.country_code_cache[country_name] = country_code;
+				this.render_country_flag(country_code);
+			})
+			.catch(() => {
+				if (this.pending_country_flag_for !== country_name) {
+					return;
+				}
 
-			this.country_code_cache[country_name] = null;
-			this.clear_country_flag();
-		});
+				this.country_code_cache[country_name] = null;
+				this.clear_country_flag();
+			});
 	}
 
 	show_link_and_clear_buttons() {
