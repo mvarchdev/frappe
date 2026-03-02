@@ -1025,22 +1025,26 @@ frappe.views.CommunicationComposer = class {
 
 		if (!last_email) return "";
 
-		var last_email_content = "";
-		if (last_email.text_content) last_email_content = last_email.text_content;
-		else {
-			// Prefer original_comment if available (unformatted), else fall back to rendered content
-			let html =
-				frappe.utils.escape_html(last_email.original_comment) || last_email.content || "";
-			// Convert HTML to plain text, then back to HTML for safe quoting, if we do not have text_content
-			// Convert HTML to plain text, then replace all line breaks (CR, LF, CRLF) with <br>
-			last_email_content = this.html2text(html).replace(/(\r\n|\r|\n)+/g, "<br>");
+		let last_email_content = "";
+		if (last_email.text_content) {
+			last_email_content = cstr(last_email.text_content).replace(/(\r\n|\r|\n)+/g, "<br>");
+		} else if (last_email.original_comment) {
+			last_email_content = this.html2text(last_email.original_comment).replace(
+				/(\r\n|\r|\n)+/g,
+				"<br>"
+			);
+		} else {
+			last_email_content = this.html2text(last_email.content || "").replace(
+				/(\r\n|\r|\n)+/g,
+				"<br>"
+			);
 		}
 
 		// clip last email for a maximum of 20k characters
 		// to prevent the email content from getting too large
 		if (last_email_content.length > 20 * 1024) {
-			last_email_content += "<div>" + __("Message clipped") + "</div>" + last_email_content;
-			last_email_content = last_email_content.slice(0, 20 * 1024);
+			last_email_content =
+				"<div>" + __("Message clipped") + "</div>" + last_email_content.slice(0, 20 * 1024);
 		}
 
 		const communication_date = frappe.datetime.global_date_format(
