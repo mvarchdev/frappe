@@ -1244,7 +1244,7 @@ class Document(BaseDocument):
 				_evaluate_alert(alert)
 			elif alert.event == "Method" and method == alert.method:
 				_evaluate_alert(alert)
-			elif alert.event == "Custom":
+			elif alert.event == "Custom" and method == "on_change":
 				_evaluate_alert(alert)
 
 	def _submit(self):
