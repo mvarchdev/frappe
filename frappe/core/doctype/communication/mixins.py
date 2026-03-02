@@ -6,7 +6,7 @@ from frappe.desk.doctype.notification_settings.notification_settings import (
 )
 from frappe.desk.doctype.todo.todo import ToDo
 from frappe.email.doctype.email_account.email_account import EmailAccount
-from frappe.utils import cstr, formataddr, get_formatted_email, get_url, parse_addr
+from frappe.utils import cstr, get_formatted_email, get_url, parse_addr
 
 
 class CommunicationEmailMixin:
@@ -273,25 +273,22 @@ class CommunicationEmailMixin:
 		)
 		bcc = self.get_mail_bcc_with_displayname(is_inbound_mail_communcation=is_inbound_mail_communcation)
 
-		if not (recipients or cc):
+		if not (recipients or cc or bcc):
 			return {}
 
-		sender = None
-		# If this is inbound mail, then we need to get sender email (outgoing email account)
+		sender = self.get_mail_sender_with_displayname()
+		# For inbound communication notifications, prefer default outgoing sender identity.
 		if is_inbound_mail_communcation:
-			default_outgoing_email_account = EmailAccount.find_default_outgoing()
-			if default_outgoing_email_account:
-				sender = formataddr(
-					pair=(default_outgoing_email_account.name, default_outgoing_email_account.email_id)
-				)
+			sender_account = EmailAccount.find_default_outgoing() or outgoing_email_account
+			if sender_account:
+				sender = sender_account.default_sender
 			else:
 				frappe.logger().info(
 					_(
 						"Unable to send mail because of a missing email account. Please setup default Email Account from Settings > Email Account"
 					)
 				)
-		else:
-			sender = self.get_mail_sender_with_displayname()
+				return {}
 
 		final_attachments = self.mail_attachments(
 			print_format=print_format, print_html=print_html, print_language=print_language
