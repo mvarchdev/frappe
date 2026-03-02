@@ -604,7 +604,7 @@ class FormTimeline extends BaseTimeline {
 			args.current_replyto_email = this.frm.doc;
 			args.recipients = this.frm.doc.sender;
 			args.subject = this.frm.doc.subject;
-			args.reply_type = frappe.constants.communication.email_reply_type.reply_type.REPLY;
+			args.reply_type = frappe.constants.communication.email_reply_type.REPLY;
 		} else {
 			const comment_value = frappe.markdown(this.frm.comment_box.get_value());
 			args.message = strip_html(comment_value) ? comment_value : "";
