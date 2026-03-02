@@ -101,6 +101,15 @@ class Communication(Document, CommunicationEmailMixin):
 	no_feed_on_delete = True
 	DOCTYPE = "Communication"
 
+	def _get_changed_fields(self) -> set[str]:
+		"""Return changed DB fields for the current document snapshot."""
+		changed_fields = set()
+		for fieldname in self.get_valid_columns():
+			if self.has_value_changed(fieldname):
+				changed_fields.add(fieldname)
+
+		return changed_fields
+
 	def check_permission(self, permtype=None, permlevel=None):
 		"""Allow status-only updates with read permission; otherwise enforce default checks."""
 		kwargs = {}
@@ -110,8 +119,8 @@ class Communication(Document, CommunicationEmailMixin):
 			kwargs["permlevel"] = permlevel
 
 		self.get_latest()
-		changed_fields = self.get_changed_fields()
-		if set(changed_fields) == {"status"}:
+		changed_fields = self._get_changed_fields()
+		if changed_fields == {"status"}:
 			kwargs["permtype"] = "read"
 		return super().check_permission(**kwargs)
 
