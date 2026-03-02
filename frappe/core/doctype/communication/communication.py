@@ -102,29 +102,7 @@ class Communication(Document, CommunicationEmailMixin):
 	DOCTYPE = "Communication"
 
 	def check_permission(self, permtype=None, permlevel=None):
-		"""
-		Raise `frappe.PermissionError` if not permitted.
-
-		This method checks if the current user has the specified permission type
-		(`permtype`) at the given permission level (`permlevel`). If the user does
-		not have the required permission, a `frappe.PermissionError` is raised.
-
-		Before performing the permission check, the method loads the document's
-		state before saving and logs any changed fields. If the only changed field
-		is "status", the permission type is set to "read" if the user have "read"
-		permission. Otherwise, the original permission type is used.
-
-		Args:
-		        permtype (str): The type of permission to check. Defaults to "read".
-		        permlevel (int, optional): The level of permission to check. Defaults to None.
-
-		Returns:
-		        bool: True if the user has the required permission, otherwise raises `frappe.PermissionError`.
-
-		Raises:
-		        frappe.PermissionError: If the user does not have the required permission.
-		"""
-		"""Raise `frappe.PermissionError` if not permitted"""
+		"""Allow status-only updates with read permission; otherwise enforce default checks."""
 		kwargs = {}
 		if permtype is not None:
 			kwargs["permtype"] = permtype
@@ -133,10 +111,8 @@ class Communication(Document, CommunicationEmailMixin):
 
 		self.get_latest()
 		changed_fields = self.get_changed_fields()
-		if changed_fields and len(list(changed_fields)) == 1 and changed_fields["status"] is not None:
+		if set(changed_fields) == {"status"}:
 			kwargs["permtype"] = "read"
-			if self.has_permission("read"):
-				kwargs["permtype"] = "read"
 		return super().check_permission(**kwargs)
 
 	def onload(self):
