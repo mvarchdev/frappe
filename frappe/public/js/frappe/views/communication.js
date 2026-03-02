@@ -35,7 +35,8 @@ frappe.views.CommunicationComposer = class {
 	make() {
 		const me = this;
 
-		this.last_email = this.get_last_email() || this.current_replyto_email;
+		// Prefer explicitly selected reply target (timeline/form context) over generic latest email.
+		this.last_email = this.current_replyto_email || this.get_last_email();
 
 		this.dialog = new frappe.ui.Dialog({
 			title: this.title || this.subject || __("New Email"),
