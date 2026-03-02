@@ -715,6 +715,34 @@ class TestInboundMail(IntegrationTestCase):
 			inbound_mail = InboundMail(mail_content, email_account, 12345, 1)
 			self.assertEqual(inbound_mail.subject, expected)
 
+	def test_clean_subject_handles_prefixed_counters(self):
+		cases = [
+			("RE[2]: FWD(3): AW-4: Project Update", "Project Update"),
+			("  re: fw: Status", "Status"),
+			("Revolution: launch notes", "Revolution: launch notes"),
+		]
+
+		for subject, expected in cases:
+			self.assertEqual(InboundMail.clean_subject(subject), expected)
+
+	def test_plain_text_content_is_escaped(self):
+		mail_content = "\n".join(
+			[
+				"From: sender@example.com",
+				"To: receiver@example.com",
+				"Subject: Plain Content",
+				"Date: Wed, 01 Jan 2025 00:00:00 +0000",
+				"Message-ID: <plain-content@test>",
+				"Content-Type: text/plain; charset=utf-8",
+				"",
+				"Hello <b>world</b>",
+			]
+		)
+
+		email_account = frappe.get_doc("Email Account", "_Test Email Account 1")
+		inbound_mail = InboundMail(mail_content, email_account, 12345, 1)
+		self.assertEqual(inbound_mail.get_content(), "Hello &lt;b&gt;world&lt;/b&gt;")
+
 	def test_create_communication_from_mail(self):
 		# Create email queue record
 		mail_content = self.get_test_mail(fname="incoming-2.raw")

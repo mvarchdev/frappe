@@ -944,9 +944,8 @@ class InboundMail(Email):
 	@staticmethod
 	def clean_subject(subject):
 		"""Remove Prefixes like 'fw', FWD', 're' etc from subject."""
-		# Match strings like "fw:", "re	:" etc.
-		regex = r"(^\s*(fw|fwd|wg)[\[\]().\- ]*[^:]*:|\s*(re|aw)[\[\]().\- ]*[^:]*:\s*)*"
-		return frappe.as_unicode(strip(re.sub(regex, "", subject, count=0, flags=re.IGNORECASE)))
+		prefix_pattern = r"^\s*(?:(?:fw|fwd|wg|re|aw)(?:[\[\(]\d+[\]\)]|[- ]\d+)?\s*:\s*)+"
+		return frappe.as_unicode(strip(re.sub(prefix_pattern, "", subject, flags=re.IGNORECASE)))
 
 	@staticmethod
 	def get_email_fields(doctype):
