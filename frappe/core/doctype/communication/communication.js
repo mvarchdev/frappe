@@ -75,43 +75,42 @@ frappe.ui.form.on("Communication", {
 						__("Actions")
 					);
 
-					frm.add_custom_button(
-						frm.doc.seen ? __("Mark as Unread") : __("Mark as Read"),
-						function () {
-							frm.trigger("mark_as_read_unread");
-						},
-						__("Actions")
-					);
-
-					frm.add_custom_button(
-						__("Move"),
-						function () {
-							frm.trigger("show_move_dialog");
-						},
-						__("Actions")
-					);
-
-					if (frm.doc.email_status != "Spam")
-						frm.add_custom_button(
-							__("Mark as Spam"),
-							function () {
-								frm.trigger("mark_as_spam");
-							},
-							__("Actions")
-						);
-
-					if (frm.doc.email_status != "Trash") {
-						frm.add_custom_button(
-							__("Move To Trash"),
-							function () {
-								frm.trigger("move_to_trash");
-							},
-							__("Actions")
-						);
-					}
-
-					// Add to Contact button only for received emails
 					if (frm.doc.sent_or_received == "Received") {
+						frm.add_custom_button(
+							frm.doc.seen ? __("Mark as Unread") : __("Mark as Read"),
+							function () {
+								frm.trigger("mark_as_read_unread");
+							},
+							__("Actions")
+						);
+
+						frm.add_custom_button(
+							__("Move"),
+							function () {
+								frm.trigger("show_move_dialog");
+							},
+							__("Actions")
+						);
+
+						if (frm.doc.email_status != "Spam")
+							frm.add_custom_button(
+								__("Mark as Spam"),
+								function () {
+									frm.trigger("mark_as_spam");
+								},
+								__("Actions")
+							);
+
+						if (frm.doc.email_status != "Trash") {
+							frm.add_custom_button(
+								__("Move To Trash"),
+								function () {
+									frm.trigger("move_to_trash");
+								},
+								__("Actions")
+							);
+						}
+
 						frm.add_custom_button(
 							__("Contact"),
 							function () {
@@ -271,7 +270,7 @@ frappe.ui.form.on("Communication", {
 		var args = frm.events.get_mail_args(frm);
 		$.extend(args, {
 			subject: __("Re: {0}", [frm.doc.subject]),
-			recipients: frm.doc.sender,
+			recipients: frm.doc.sent_or_received === "Sent" ? frm.doc.recipients : frm.doc.sender,
 			is_a_reply: true,
 		});
 
@@ -282,7 +281,7 @@ frappe.ui.form.on("Communication", {
 		var args = frm.events.get_mail_args(frm);
 		$.extend(args, {
 			subject: __("Res: {0}", [frm.doc.subject]),
-			recipients: frm.doc.sender,
+			recipients: frm.doc.sent_or_received === "Sent" ? frm.doc.recipients : frm.doc.sender,
 			cc: frm.doc.cc,
 			is_a_reply: true,
 		});
