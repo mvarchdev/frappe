@@ -72,6 +72,22 @@ frappe.dom = {
 			return txt;
 		}
 	},
+	remove_script: function (txt) {
+		if (typeof txt !== "string" || !txt.trim()) {
+			return txt;
+		}
+
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(txt, "text/html");
+		let removed = 0;
+
+		for (const element of doc.querySelectorAll("script, noscript, title")) {
+			element.remove();
+			removed++;
+		}
+
+		return removed ? doc.documentElement.outerHTML : txt;
+	},
 	is_element_in_viewport: function (el, tolerance = 0) {
 		//special bonus for those using jQuery
 		if (typeof jQuery === "function" && el instanceof jQuery) {

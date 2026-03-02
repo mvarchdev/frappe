@@ -1,8 +1,5 @@
 frappe.ui.form.on("Communication", {
 	onload: function (frm) {
-		if (frm.doc.content) {
-			frm.doc.content = frappe.dom.remove_script_and_style(frm.doc.content);
-		}
 		frm.set_query("reference_doctype", function () {
 			return {
 				filters: {
@@ -21,6 +18,18 @@ frappe.ui.form.on("Communication", {
 		// content field contains weird table html that does not render well in Quill
 		// this field is not to be edited directly anyway, so setting it as read only
 		frm.set_df_property("content", "read_only", 1);
+		if (frm.doc.content) {
+			const wrapper = frm.get_field("content")?.$wrapper?.get(0);
+			if (wrapper) {
+				wrapper.innerHTML = '<iframe title="Email Preview" sandbox="" class="w-100"></iframe>';
+				const iframe = wrapper.querySelector("iframe");
+				if (iframe) {
+					iframe.srcdoc = frappe.dom.remove_script(frm.doc.content);
+					iframe.style.minHeight = "70vh";
+					iframe.style.border = "none";
+				}
+			}
+		}
 
 		if (frm.doc.reference_doctype && frm.doc.reference_name) {
 			frm.add_custom_button(__(frm.doc.reference_name), function () {
