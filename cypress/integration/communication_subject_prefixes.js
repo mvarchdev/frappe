@@ -1,12 +1,13 @@
 describe("Communication subject prefixes", () => {
 	before(() => {
 		cy.login("Administrator", "admin");
-		cy.visit("/desk/Form/Communication/new-communication-1");
-		cy.window().its("cur_frm.events.reply").should("exist");
-		cy.window().its("frappe.views.CommunicationComposer").should("exist");
 	});
 
 	it("passes reply type metadata from communication form actions", () => {
+		cy.visit("/desk/Form/Communication/new-communication-1");
+		cy.window().its("cur_frm.events.reply").should("exist");
+		cy.window().its("frappe.views.CommunicationComposer").should("exist");
+
 		cy.window()
 			.should((win) => {
 				expect(win.cur_frm && win.cur_frm.events).to.exist;
