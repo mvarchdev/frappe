@@ -322,6 +322,46 @@ class TestCommunication(IntegrationTestCase):
 		).insert(ignore_permissions=True)
 		self.assertNotEqual(normal_comm.email_status, "Spam")
 
+	def test_status_only_update_allows_read_permission(self):
+		communication = frappe.get_doc(
+			{
+				"doctype": "Communication",
+				"communication_type": "Communication",
+				"communication_medium": "Email",
+				"subject": "Status Permission Test",
+				"content": "Status Permission Test",
+				"sender": "sender@example.com",
+				"recipients": "recipient@example.com",
+				"status": "Open",
+			}
+		).insert(ignore_permissions=True)
+
+		self.assertTrue(
+			frappe.has_permission(
+				"Communication", doc=communication.name, ptype="read", user="test@example.com"
+			)
+		)
+		self.assertFalse(
+			frappe.has_permission(
+				"Communication", doc=communication.name, ptype="write", user="test@example.com"
+			)
+		)
+
+		try:
+			frappe.set_user("test@example.com")
+			read_only_user_doc = frappe.get_doc("Communication", communication.name)
+			read_only_user_doc.status = "Closed"
+			read_only_user_doc.save()
+
+			read_only_user_doc = frappe.get_doc("Communication", communication.name)
+			read_only_user_doc.subject = "Should Not Save"
+			with self.assertRaises(frappe.PermissionError):
+				read_only_user_doc.save()
+		finally:
+			frappe.set_user("Administrator")
+
+		self.assertEqual(frappe.db.get_value("Communication", communication.name, "status"), "Closed")
+
 
 class TestCommunicationEmailMixin(IntegrationTestCase):
 	def new_communication(self, recipients=None, cc=None, bcc=None) -> Communication:
