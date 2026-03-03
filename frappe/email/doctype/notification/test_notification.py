@@ -10,7 +10,7 @@ import frappe.utils.scheduler
 from frappe.desk.form import assign_to
 from frappe.tests import IntegrationTestCase
 
-from .notification import trigger_notifications
+from .notification import get_context, trigger_notifications
 
 EXTRA_TEST_RECORD_DEPENDENCIES = ["User", "Notification"]
 
@@ -662,6 +662,46 @@ class TestNotification(IntegrationTestCase):
 
 			# Clean up
 			todo.delete(ignore_permissions=True)
+
+	def test_dynamic_receiver_normalization_skips_none_values(self):
+		self.assertEqual(
+			frappe.get_doc({"doctype": "Notification"})._normalize_dynamic_receivers(
+				["alpha@example.com", None, " beta@example.com ", "", "   "]
+			),
+			["alpha@example.com", "beta@example.com"],
+		)
+
+	def test_dynamic_receiver_email_list_is_validated_and_deduplicated(self):
+		todo = frappe.new_doc("ToDo")
+		todo.description = "Dynamic Notification Recipients"
+		todo.insert(ignore_permissions=True)
+
+		notification = frappe.get_doc(
+			{
+				"doctype": "Notification",
+				"subject": "Dynamic Recipients",
+				"document_type": "ToDo",
+				"event": "Custom",
+				"message": "Dynamic recipients test",
+				"channel": "Email",
+				"recipients": [
+					{
+						"dynamic_receiver": (
+							"['alpha@example.com', None, ' beta@example.com ', "
+							"'not-an-email', 'alpha@example.com']"
+						)
+					}
+				],
+			}
+		)
+
+		recipients, cc, bcc = notification.get_list_of_recipients(todo, get_context(todo))
+
+		self.assertCountEqual(recipients, ["alpha@example.com", "beta@example.com"])
+		self.assertFalse(cc)
+		self.assertFalse(bcc)
+
+		todo.delete(ignore_permissions=True)
 
 	@classmethod
 	def tearDownClass(cls):

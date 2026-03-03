@@ -579,7 +579,15 @@ def get_context(context):
 		else:
 			values = [dynamic_receiver_eval]
 
-		return [str(value).strip() for value in values if str(value).strip()]
+		normalized = []
+		for value in values:
+			if value is None:
+				continue
+			value = str(value).strip()
+			if value:
+				normalized.append(value)
+
+		return normalized
 
 	def _evaluate_dynamic_receivers(self, dynamic_receiver_code: str, context: dict) -> list[str]:
 		dynamic_receiver_eval = frappe.safe_eval(dynamic_receiver_code, None, context)
