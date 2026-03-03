@@ -1,6 +1,6 @@
 context("Control Custom Search", () => {
 	before(() => {
-		cy.login();
+		cy.login("Administrator", "admin");
 		cy.visit("/desk");
 	});
 
