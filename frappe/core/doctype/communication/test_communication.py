@@ -405,6 +405,29 @@ class TestCommunicationEmailMixin(IntegrationTestCase):
 		doc.delete()
 		comm.delete()
 
+	def test_inbound_notification_uses_default_outgoing_sender(self):
+		email_account = create_email_account()
+		try:
+			frappe.set_user("test@example.com")
+			todo = frappe.get_doc({"doctype": "ToDo", "description": "Inbound Sender Test"}).insert()
+		finally:
+			frappe.set_user("Administrator")
+
+		comm = self.new_communication(recipients=["to@test.com"])
+		comm.sender = "inbound-sender@test.com"
+		comm.email_account = email_account.name
+		comm.reference_doctype = "ToDo"
+		comm.reference_name = todo.name
+		comm.save(ignore_permissions=True)
+
+		mail_input = comm.sendmail_input_dict(is_inbound_mail_communcation=True)
+
+		self.assertEqual(mail_input.get("sender"), email_account.default_sender)
+
+		comm.delete()
+		todo.delete(ignore_permissions=True)
+		email_account.delete()
+
 	def test_add_attachments_by_filename(self):
 		to_list = ["to <to@test.com>"]
 		comm = self.new_communication(recipients=to_list)
