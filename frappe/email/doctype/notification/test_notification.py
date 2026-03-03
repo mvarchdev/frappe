@@ -728,6 +728,42 @@ class TestNotification(IntegrationTestCase):
 		self.assertTrue("test1@example.com" in recipients)
 		self.assertEqual(notification.enabled, 1)
 
+	def test_custom_event_notification_triggers_on_save(self):
+		notification_config = {
+			"name": "Test Custom Event Save Trigger",
+			"subject": "Custom Event Save Trigger",
+			"document_type": "ToDo",
+			"event": "Custom",
+			"message": "Custom notification fired",
+			"channel": "Email",
+			"recipients": [{"receiver_by_document_field": "allocated_to"}],
+		}
+
+		with get_test_notification(notification_config):
+			frappe.client_cache.delete_value("notifications::ToDo")
+			frappe.db.delete("Email Queue", {"subject": "Custom Event Save Trigger"})
+			todo = frappe.get_doc(
+				{
+					"doctype": "ToDo",
+					"description": "custom-event-notification",
+					"allocated_to": "test1@example.com",
+				}
+			).insert()
+			todo.description = "custom-event-notification-updated"
+			todo.save()
+
+			self.assertTrue(
+				frappe.db.exists(
+					"Communication",
+					{
+						"reference_doctype": "ToDo",
+						"reference_name": todo.name,
+						"subject": "Custom Event Save Trigger",
+						"communication_type": "Automated Message",
+					},
+				)
+			)
+
 
 # ruff: noqa: RUF001
 """
