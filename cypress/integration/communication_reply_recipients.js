@@ -1,6 +1,6 @@
 describe("Communication reply recipients", () => {
 	before(() => {
-		cy.login();
+		cy.login("Administrator", "admin");
 		cy.visit("/desk/note/new");
 	});
 
